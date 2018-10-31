@@ -3,31 +3,32 @@
 // document.cookie = 'lastUpdateDate=' + now.getTime();
 
 // Check if the browser supports IDBObjectStore
-let response = [{
-                    name: 'Jimmy',
-                    email: 'jimmy@domain.com',
-                    phone: 234564
-                  },
-                  {
-                    name: 'Sally',
-                    email: 'sally@domain.com',
-                    phone: 294721
-                  },
-                  {
-                    name: 'Danny',
-                    email: 'danny@domain.com',
-                    phone: 900635
-                  },
-                  {
-                    name: 'Suzie',
-                    email: 'suzie@domain.com',
-                    phone: 113890
-                  },
-                  {
-                    name: 'Tommy',
-                    email: 'tommy@domain.com',
-                    phone: 334227
-                  }];
+// let response = [{
+//                     name: 'Jimmy',
+//                     email: 'jimmy@domain.com',
+//                     phone: 234564
+//                   },
+//                   {
+//                     name: 'Sally',
+//                     email: 'sally@domain.com',
+//                     phone: 294721
+//                   },
+//                   {
+//                     name: 'Danny',
+//                     email: 'danny@domain.com',
+//                     phone: 900635
+//                   },
+//                   {
+//                     name: 'Suzie',
+//                     email: 'suzie@domain.com',
+//                     phone: 113890
+//                   },
+//                   {
+//                     name: 'Tommy',
+//                     email: 'tommy@domain.com',
+//                     phone: 334227
+//                   }];
+let queryString = 'tag.gettopalbums&tag=kpop&limit=20&api_key=';
 let getTopAlbumButtEl = document.querySelector('.header__button-get-Top-Albums');
 if ('indexedDB' in window) {
   // If our custom cookie is found on the browser, render last time the catalog was updated.
@@ -42,7 +43,8 @@ if ('indexedDB' in window) {
   }
 
   getTopAlbumButtEl.addEventListener('click', function(event) {
-    createLocalMusicDBStore(response);
+    // createLocalMusicDBStore(response);
+    requestLastFmAPIResponse(queryString);
   });
 
 
@@ -73,22 +75,32 @@ if ('indexedDB' in window) {
         +' at '+lastUpdateDateObj.toLocaleTimeString("en-US")+'.';
     }
   }
+  // Function to take api request query, create and send an AJAx call and return the response.
+  function requestLastFmAPIResponse(APIQueryString) {
+    const API_KEY = '642b7968fcdd1af2738659d02a8d60dc&format=json',
+          API_ROOT = 'http://ws.audioscrobbler.com/2.0/?method='
 
-  function sendLastFmAPIRequest() {
-    const API_KEY = '642b7968fcdd1af2738659d02a8d60dc';
-    let xhr = new XMLHttpRequest();
+    $.ajax({
+      url: API_ROOT + APIQueryString + API_KEY,
+      dataType: 'json'
+    }).done(function(response) {
+      let albumList = response.albums.album,
+          albumsArray = [];
 
-    xhr.onload = function () {
-
-      if (xhr.status === 200) {
-        console.log(JSON.parse(xhr.response).data);
-        console.log(xhr.getResponseHeader('Content-Type'));
+      for (let i = 0; i < albumList.length; i++) {
+        let albumObject = {};
+        albumObject.name = albumList[i].name;
+        albumObject.artist = albumList[i].artist.name;
+        albumObject.album_art = albumList[i].image[2]['#text'];
+        albumObject.album_rank_in_genre = albumList[i]['@attr'].rank;
+        albumsArray.push(albumObject);
       }
-    };
-
-    xhr.open('GET', '/response.json');
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.send();
+      console.log(albumsArray);
+      createLocalMusicDBStore(albumsArray)
+      // return albumsArray;
+    }).fail(function() {
+      // Handle a failure to get api response here
+    });
   }
   // Function to take Last.fm API response, create an IndexedDB and save response to the DB
   function createLocalMusicDBStore(APIResponse) {
@@ -97,7 +109,7 @@ if ('indexedDB' in window) {
 
     openIDBRequest.onupgradeneeded = function(event) {
       let db = event.target.result,
-          objectStore = db.createObjectStore('CurrentTopAlbums', { autoIncrement: true, keyPath: 'key' });
+          objectStore = db.createObjectStore('CurrentTopAlbums', { keyPath: 'album_rank_in_genre' });
 
       objectStore.transaction.oncomplete = function(event) {
         let transaction = db.transaction('CurrentTopAlbums', 'readwrite'),

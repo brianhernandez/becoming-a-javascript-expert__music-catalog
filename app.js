@@ -78,7 +78,7 @@ if ('indexedDB' in window) {
   // Function to take api request query, create and send an AJAx call and return the response.
   function requestLastFmAPIResponse(APIQueryString) {
     const API_KEY = '642b7968fcdd1af2738659d02a8d60dc&format=json',
-          API_ROOT = 'http://ws.audioscrobbler.com/2.0/?method='
+          API_ROOT = 'https://ws.audioscrobbler.com/2.0/?method='
 
     $.ajax({
       url: API_ROOT + APIQueryString + API_KEY,

@@ -9,12 +9,16 @@
 </head>
 <body id="app">
   <h1 class="header__site-title">Course: Becoming A JavaScript Expert, Chapter 8: Frontend Datastore: Cookies, LocalStorage, and More, Project Assignment 1: Music Catalog</h1>
-  <div class="header__message"></div>
   <div class="header__controls">
-    <button class="header__button header__button-get-Top-Albums">Get Top Albums</button>
+    <h3 class="header__instructions">Enter A Music Genre And Choose To Get Its Current Top 20 Albums or Tracks</h3>
+    <p class="header__examples">Genre Examples: pop, disco, classical, kpop, dance</p>
+    <input type="text" class="header__input">
+    <button class="header__button header__button-get-Top-Albums" id="getTopAlbums">Get Top Albums</button>
+    <button class="header__button header__button-get-Top-Tracks" id="getTopTracks">Get Top Tracks</button>
     <!-- <button class="header__button header__button-">Button 2</button> -->
   </div>
-  
+  <div class="header__message"></div>
+
   <script
     src="https://code.jquery.com/jquery-3.3.1.min.js"
     integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="

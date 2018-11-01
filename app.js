@@ -3,11 +3,11 @@
 // document.cookie = 'lastUpdateDate=' + now.getTime();
 
 // Check if the browser supports IDBObjectStore
-let queryString = 'tag.gettopalbums&tag=kpop&limit=20&api_key=',
-    topTracksOrAlbumsStr,
-    trackAndAlbumButtons = document.querySelectorAll('.header__button');
+// let queryString = 'tag.gettopalbums&tag=kpop&limit=20&api_key=',
 
 if ('indexedDB' in window) {
+  let topTracksOrAlbumsStr,
+      trackAndAlbumButtons = document.querySelectorAll('.header__button');
   // If our custom cookie is found on the browser, render last time the catalog was updated.
   if (document.cookie.indexOf('lastUpdateDate') >= 0) {
     console.log('we have a cookie.');
@@ -50,7 +50,7 @@ if ('indexedDB' in window) {
         dateMatch = findDateRegEx.exec(document.cookie),
         lastUpdateDateStr = dateMatch[1],
         lastUpdateDateObj = new Date(parseInt(lastUpdateDateStr)),
-        lastUpdateDateEl = document.querySelector('.header__last-update-date');
+        lastUpdateDateEl = document.querySelector('.header__message');
     console.log(lastUpdateDateStr);
     console.log(lastUpdateDateObj);
     // If the last updated date string has been rendered already, replace it.
@@ -60,7 +60,7 @@ if ('indexedDB' in window) {
     } else {
       console.log(formatHumanDate());
       let lastUpdateDateEl = document.createElement('p');
-      lastUpdateDateEl.className = '.header__last-update-date';
+      lastUpdateDateEl.className = '.header__message';
       lastUpdateDateEl.innerHTML = formatHumanDate();
       document.querySelector('.header__message').appendChild(lastUpdateDateEl);
     }
@@ -82,7 +82,10 @@ if ('indexedDB' in window) {
       // If successfully received, initialize an array that will hold a simplified subset of reponse
     }).done(function(response) {
       let albumList = response.albums.album,
-          albumsArray = [];
+          albumsArray = [],
+          now = new Date();
+          document.cookie = 'lastUpdateDate=' + now.getTime();
+          renderLastUpdateDate();
       // For all albums received, create an object that holds some basic attributes of each album
       for (let i = 0; i < albumList.length; i++) {
         let albumObject = {};
@@ -96,9 +99,10 @@ if ('indexedDB' in window) {
       }
       console.log(response);
       console.log(albumsArray);
-      createLocalMusicDBStore(albumsArray)
+
+      createLocalMusicDBStore(albumsArray);
       // Return the completed array of simplified album info objs received from the api response
-      return albumsArray;
+      // return albumsArray;
     }).fail(function() {
       // Handle a failure to get api response here
     });

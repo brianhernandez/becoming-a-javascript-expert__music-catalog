@@ -1,10 +1,5 @@
 'use strict';
-// let now = new Date();
-// document.cookie = 'lastUpdateDate=' + now.getTime();
 
-// Check if the browser supports IDBObjectStore
-// let queryString = 'tag.gettopalbums&tag=kpop&limit=20&api_key=',
-// var dbVer = 1;
 if ('indexedDB' in window) {
   let topTracksOrAlbumsStr,
       trackAndAlbumButtons = document.querySelectorAll('.header__button'),
@@ -13,16 +8,6 @@ if ('indexedDB' in window) {
   if (document.cookie.indexOf('lastUpdateDate') >= 0) {
     renderLastUpdateDate();
     getAlbumRecordsFromDB();
-    // let openRequest = window.indexedDB.open('LocalMusicDBStore');
-		//     openRequest.onsuccess = function(event) {
-    //       console.log('opened LocalMusicDBStore DB');
-    //     }
-    //     openRequest.onsuccess.onerror = function(event) {
-    //       console.log('NOT opened LocalMusicDBStore DB');
-    //     }
-  } else {
-    // the visitor has no cookie so they have never called the api before
-
   }
 
   trackAndAlbumButtons.forEach(function(element) {
@@ -31,7 +16,7 @@ if ('indexedDB' in window) {
           genreString = '&tag=' + textInputEl.value;
 
       if (textInputEl.value === '') {
-        alert('You\'ll need to enter a music genre to get the top results.');
+        alert('You\'ll need to enter a music tag to get its top results.');
         return;
       }
 
@@ -45,6 +30,7 @@ if ('indexedDB' in window) {
       } else {
         topTracksOrAlbumsStr = 'tag.gettoptracks';
       }
+
       requestLastFmAPIResponse(topTracksOrAlbumsStr + genreString);
     });
   });
@@ -69,8 +55,7 @@ if ('indexedDB' in window) {
         lastUpdateDateStr = dateMatch[1],
         lastUpdateDateObj = new Date(parseInt(lastUpdateDateStr)),
         messageFieldEl = document.querySelector('.header__message');
-    // console.log(lastUpdateDateStr);
-    // console.log(lastUpdateDateObj);
+
     // If the last updated date string has been rendered already, replace it.
     if (messageFieldEl.classList.contains('warning')) {
       messageFieldEl.classList.remove('warning');
@@ -80,7 +65,7 @@ if ('indexedDB' in window) {
 
     // Format the last updated date message to human readable.
     function formatHumanDate() {
-      return 'This catalog was last updated on '+lastUpdateDateObj.toLocaleDateString("en-US")
+      return 'These results were last updated on '+lastUpdateDateObj.toLocaleDateString("en-US")
         +' at '+lastUpdateDateObj.toLocaleTimeString("en-US")+'.';
     }
   }
@@ -88,7 +73,7 @@ if ('indexedDB' in window) {
   function renderNoRecordsFoundMessage() {
     let messageFieldEl = document.querySelector('.header__message');
     messageFieldEl.classList.add('warning');
-    messageFieldEl.innerHTML = 'No results were found for the <span class="genre">"'+inputField.value+'"</span> genre.';
+    messageFieldEl.innerHTML = 'No results were found for the <span class="genre">"'+inputField.value+'"</span> tag.';
   }
   // Function to take api request query, create and send an AJAx call and return the response.
   function requestLastFmAPIResponse(APIQueryString) {
@@ -101,15 +86,12 @@ if ('indexedDB' in window) {
       dataType: 'json'
       // If successfully received, initialize an array that will hold a simplified subset of reponse
     }).done(function(response) {
-      console.log('This is the response:');
-      console.log(response);
       let musicList,
           musicArray = [];
 
       if (APIQueryString.indexOf('tag.gettopalbums') >= 0) {
         musicList = response.albums.album;
         if (musicList.length === 0) {
-          console.log('No Records Found');
           // Fire clear music records on browser function
           clearBrowserOfAllMusicRecords();
           renderNoRecordsFoundMessage();
@@ -134,7 +116,6 @@ if ('indexedDB' in window) {
       } else {
         musicList = response.tracks.track;
         if (musicList.length === 0) {
-          console.log('No Records Found');
           // Fire clear music records on browser function
           clearBrowserOfAllMusicRecords();
           renderNoRecordsFoundMessage();
@@ -157,45 +138,27 @@ if ('indexedDB' in window) {
         document.cookie = 'lastUpdateDate=' + now.getTime();
         renderLastUpdateDate();
       }
-      // let musicList = response.albums.album,
-
-
-      console.log(response);
-
-      // console.log(response);
-      // console.log(musicArray);
 
       createAndUpdateLocalMusicDBStore(musicArray);
-      // Return the completed array of simplified album info objs received from the api response
-      // return musicArray;
     }).fail(function() {
-      // Handle a failure to get api response here
+      alert('Something happened and a request to the API failed');
     });
   }
   // Function to take Last.fm API response, create an IndexedDB and save response to the DB
   function createAndUpdateLocalMusicDBStore(APIResponse) {
-    // console.log('createAndUpdateLocalMusicDBStore func called');
-    // console.log(APIResponse);
     var db = window.indexedDB.open('LocalMusicDBStore');
         db.onupgradeneeded = function(event) {
-
-      console.log('DB created successfully');
-      console.log('Creating objectStore....');
-
-      let objectStore = event.target.result.createObjectStore('CurrentTopAlbums', { autoIncrement: true });
+    let objectStore = event.target.result.createObjectStore('CurrentTopAlbums', { autoIncrement: true });
 
       objectStore.transaction.oncomplete = function(event) {
-        console.log('objectStore created successfully');
       }
     }
 
     db.onsuccess = function(event) {
-      console.log('DB db.onsuccess Accessed Successfully');
       let currentTopAlbumsObjStr = event.target.result.transaction('CurrentTopAlbums', 'readwrite').objectStore('CurrentTopAlbums'),
           currentTopAlbums = APIResponse;
 
       currentTopAlbumsObjStr.clear().onsuccess = function(event) {
-        console.log('DB deleted successfully.');
 
         currentTopAlbums.forEach(function(album) {
           currentTopAlbumsObjStr.put(album);
@@ -209,7 +172,6 @@ if ('indexedDB' in window) {
     let openIDBRequest = window.indexedDB.open('LocalMusicDBStore');
 
     openIDBRequest.onsuccess = function(event) {
-      console.log('getAlbumRecordsDB func open request success');
       let db = event.target.result,
           transaction = db.transaction('CurrentTopAlbums', 'readonly'),
           currentTopAlbumsObjStr = transaction.objectStore('CurrentTopAlbums'),
@@ -217,8 +179,6 @@ if ('indexedDB' in window) {
 
       getAllAlbumsStored.onsuccess = function(event) {
         let allStoredAlbumsInDB = event.target.result;
-        console.log('Here are the results for DB pull:');
-        console.log(allStoredAlbumsInDB);
         // Call function that will render or update the new records to browser
         renderOrUpdateAlbumsToBrowser(allStoredAlbumsInDB);
       }

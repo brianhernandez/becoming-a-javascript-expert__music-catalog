@@ -4,10 +4,11 @@
 
 // Check if the browser supports IDBObjectStore
 // let queryString = 'tag.gettopalbums&tag=kpop&limit=20&api_key=',
-var dbVer = 1;
+// var dbVer = 1;
 if ('indexedDB' in window) {
   let topTracksOrAlbumsStr,
-      trackAndAlbumButtons = document.querySelectorAll('.header__button');
+      trackAndAlbumButtons = document.querySelectorAll('.header__button'),
+      inputField = document.querySelector('.header__input');
   // If our custom cookie is found on the browser, render last time the catalog was updated.
   if (document.cookie.indexOf('lastUpdateDate') >= 0) {
     // renderLastUpdateDate();
@@ -48,6 +49,18 @@ if ('indexedDB' in window) {
     });
   });
 
+  inputField.addEventListener('keyup', function(event) {
+    let key = event.keyCode || event.which;
+
+    if (key === 13) {
+      if (document.querySelector('.is-active')) {
+        document.querySelector('.is-active').click();
+      } else {
+        document.querySelector('#getTopAlbums').click();
+      }
+    }
+  });
+
   // Function to render last update date to browser or replace the message with most current date
   function renderLastUpdateDate() {
     // Create a new date object from the time stamp found in our site's cookie.
@@ -86,8 +99,16 @@ if ('indexedDB' in window) {
       dataType: 'json'
       // If successfully received, initialize an array that will hold a simplified subset of reponse
     }).done(function(response) {
-      let albumList = response.albums.album,
-          albumsArray = [],
+      console.log('This is the response:');
+      console.log(response);
+      let albumList = response.albums.album;
+      // if (APIQueryString.indexOf('tag.gettopalbums') >= 0) {
+      //   albumList = response.albums.album;
+      // } else {
+      //   albumList = response.tracks.track;
+      // }
+      // let albumList = response.albums.album,
+        let albumsArray = [],
           now = new Date();
           document.cookie = 'lastUpdateDate=' + now.getTime();
           renderLastUpdateDate();
@@ -99,14 +120,14 @@ if ('indexedDB' in window) {
         albumObject.artist = albumList[i].artist.name;
         albumObject.url = albumList[i].url;
         albumObject.album_art = albumList[i].image[2]['#text'];
-        albumObject.album_rank_in_genre = albumList[i]['@attr'].rank;
+        albumObject.rank = albumList[i]['@attr'].rank;
         // Add this simplified album info object to the albumsArray
         albumsArray.push(albumObject);
       }
       // console.log(response);
       // console.log(albumsArray);
 
-      createLocalMusicDBStore(albumsArray);
+      createAndUpdateLocalMusicDBStore(albumsArray);
       // Return the completed array of simplified album info objs received from the api response
       // return albumsArray;
     }).fail(function() {
@@ -114,8 +135,8 @@ if ('indexedDB' in window) {
     });
   }
   // Function to take Last.fm API response, create an IndexedDB and save response to the DB
-  function createLocalMusicDBStore(APIResponse) {
-    // console.log('createLocalMusicDBStore func called');
+  function createAndUpdateLocalMusicDBStore(APIResponse) {
+    // console.log('createAndUpdateLocalMusicDBStore func called');
     // console.log(APIResponse);
     var db = window.indexedDB.open('LocalMusicDBStore');
         db.onupgradeneeded = function(event) {
@@ -135,38 +156,15 @@ if ('indexedDB' in window) {
       let currentTopAlbumsObjStr = event.target.result.transaction('CurrentTopAlbums', 'readwrite').objectStore('CurrentTopAlbums'),
           currentTopAlbums = APIResponse;
 
-      currentTopAlbums.forEach(function(album) {
-        currentTopAlbumsObjStr.put(album);
-      });
-
-      getAlbumRecordsFromDB();
-    }
-  }
-
-  function createNewDBWithAPIResponse(APIResponse) {
-    console.log('createNewDBWithAPIResponse() func fired');
-    let openIDBRequest = window.indexedDB.open('LocalMusicDBStore', 1);
-
-    openIDBRequest.onupgradeneeded = function(event) {
-      let db = event.target.result,
-          objectStore = db.createObjectStore('CurrentTopAlbums', { autoIncrement: true });
-
-      objectStore.transaction.oncomplete = function(event) {
-        let transaction = db.transaction('CurrentTopAlbums', 'readwrite'),
-            currentTopAlbumsObjStr = transaction.objectStore('CurrentTopAlbums'),
-            currentTopAlbums = APIResponse;
+      currentTopAlbumsObjStr.clear().onsuccess = function(event) {
+        console.log('DB deleted successfully.');
 
         currentTopAlbums.forEach(function(album) {
           currentTopAlbumsObjStr.put(album);
         });
-
-        // console.log(db.close());
-        dbVer = db.version + 1;
-        db.close();
         getAlbumRecordsFromDB();
       }
     }
-    // create new DB code here
   }
   // Function to retrieve stored album records from DB
   function getAlbumRecordsFromDB() {
@@ -197,6 +195,22 @@ if ('indexedDB' in window) {
 
     function updateFields(albumData) {
       console.log('Fields need to be updated here.');
+      console.log(albumData.length);
+      console.log(albumData);
+      let albumDivsArr = document.querySelectorAll('.albums__album'),
+          albumArtistUrlArr = document.querySelectorAll('.albums__album-artist-url'),
+          albumRankBadgeArr = document.querySelectorAll('.albums__album-rank-badge'),
+          albumImgArr = document.querySelectorAll('.albums__album-art'),
+          albumNameArr = document.querySelectorAll('.albums__album-name'),
+          albumArtist = document.querySelectorAll('.albums__album-artist');
+
+      console.log(albumDivsArr);
+      for (let i = 0; i < albumData.length; i++) {
+        albumArtistUrlArr[i].href = albumData[i].url;
+        albumImgArr[i].src = albumData[i].album_art;
+        albumNameArr[i].innerHTML = albumData[i].name;
+        albumArtist[i].innerHTML = albumData[i].artist;
+      }
     }
 
     function createFields(albumData) {
@@ -205,13 +219,13 @@ if ('indexedDB' in window) {
       for (let i = 0; i < albumData.length; i++) {
         let albumDiv = document.createElement('div');
             albumDiv.classList = 'albums__album';
-            albumDiv.id = 'rank_' + albumData[i].album_rank_in_genre;
+            albumDiv.id = 'rank_' + albumData[i].rank;
         let albumArtistUrl = document.createElement('a');
             albumArtistUrl.href = albumData[i].url;
             albumArtistUrl.classList = 'albums__album-artist-url';
         let albumRankBadge = document.createElement('span');
             albumRankBadge.classList = 'albums__album-rank-badge';
-            albumRankBadge.innerHTML = '#' + albumData[i].album_rank_in_genre;
+            albumRankBadge.innerHTML = '#' + albumData[i].rank;
         let albumImg = document.createElement('img');
             albumImg.classList = 'albums__album-art';
             albumImg.src = albumData[i].album_art;

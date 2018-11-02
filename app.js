@@ -147,8 +147,9 @@ if ('indexedDB' in window) {
   // Function to take Last.fm API response, create an IndexedDB and save response to the DB
   function createAndUpdateLocalMusicDBStore(APIResponse) {
     var db = window.indexedDB.open('LocalMusicDBStore');
-        db.onupgradeneeded = function(event) {
-    let objectStore = event.target.result.createObjectStore('CurrentTopAlbums', { autoIncrement: true });
+
+    db.onupgradeneeded = function(event) {
+      let objectStore = event.target.result.createObjectStore('CurrentTopAlbums', { autoIncrement: true });
 
       objectStore.transaction.oncomplete = function(event) {
       }

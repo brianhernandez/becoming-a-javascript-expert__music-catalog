@@ -161,7 +161,7 @@ if ('indexedDB' in window) {
       currentTopAlbumsObjStr.clear().onsuccess = function(event) {
 
         currentTopAlbums.forEach(function(album) {
-          currentTopAlbumsObjStr.put(album);
+          currentTopAlbumsObjStr.add(album);
         });
         getAlbumRecordsFromDB();
       }

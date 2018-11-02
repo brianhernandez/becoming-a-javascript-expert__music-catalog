@@ -79,7 +79,7 @@ if ('indexedDB' in window) {
   function requestLastFmAPIResponse(APIQueryString) {
     const API_KEY = '&limit=20&api_key=642b7968fcdd1af2738659d02a8d60dc&format=json',
           // ###### CHANGE TO HTTPS WHEN DEPLOYING ON GITHUB ########
-          API_ROOT = 'http://ws.audioscrobbler.com/2.0/?method='
+          API_ROOT = 'https://ws.audioscrobbler.com/2.0/?method='
     // Send GET request to Last.fm API using built query string
     $.ajax({
       url: API_ROOT + APIQueryString + API_KEY,

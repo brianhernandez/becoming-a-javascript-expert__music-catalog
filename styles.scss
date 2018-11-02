@@ -10,6 +10,17 @@ body {
 
 .header__message {
   margin-top: 15px;
+
+  &.warning {
+    color: red;
+    font-weight: bold;
+    // text-transform: uppercase;
+
+    & .genre {
+      color: black;
+      
+    }
+  }
 }
 
 .header__button {

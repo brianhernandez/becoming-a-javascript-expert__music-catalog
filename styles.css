@@ -11,6 +11,13 @@ body {
 .header__message {
   margin-top: 15px;
 }
+.header__message.warning {
+  color: red;
+  font-weight: bold;
+}
+.header__message.warning .genre {
+  color: black;
+}
 
 .header__button {
   padding: 8px 12px;

@@ -11,8 +11,8 @@ if ('indexedDB' in window) {
       inputField = document.querySelector('.header__input');
   // If our custom cookie is found on the browser, render last time the catalog was updated.
   if (document.cookie.indexOf('lastUpdateDate') >= 0) {
-    // renderLastUpdateDate();
-    // getAlbumRecordsFromDB();
+    renderLastUpdateDate();
+    getAlbumRecordsFromDB();
     // let openRequest = window.indexedDB.open('LocalMusicDBStore');
 		//     openRequest.onsuccess = function(event) {
     //       console.log('opened LocalMusicDBStore DB');
@@ -68,25 +68,27 @@ if ('indexedDB' in window) {
         dateMatch = findDateRegEx.exec(document.cookie),
         lastUpdateDateStr = dateMatch[1],
         lastUpdateDateObj = new Date(parseInt(lastUpdateDateStr)),
-        lastUpdateDateEl = document.querySelector('.header__message');
+        messageFieldEl = document.querySelector('.header__message');
     // console.log(lastUpdateDateStr);
     // console.log(lastUpdateDateObj);
     // If the last updated date string has been rendered already, replace it.
-    if (lastUpdateDateEl) {
-      lastUpdateDateEl.innerHTML = formatHumanDate();
+    if (messageFieldEl.classList.contains('warning')) {
+      messageFieldEl.classList.remove('warning');
       // Else, create a new last update date message and render to the browser.
-    } else {
-      // console.log(formatHumanDate());
-      let lastUpdateDateEl = document.createElement('p');
-      lastUpdateDateEl.className = '.header__message';
-      lastUpdateDateEl.innerHTML = formatHumanDate();
-      document.querySelector('.header__message').appendChild(lastUpdateDateEl);
     }
+    messageFieldEl.innerHTML = formatHumanDate();
+
     // Format the last updated date message to human readable.
     function formatHumanDate() {
       return 'This catalog was last updated on '+lastUpdateDateObj.toLocaleDateString("en-US")
         +' at '+lastUpdateDateObj.toLocaleTimeString("en-US")+'.';
     }
+  }
+  // Function to add no records found message to clearBrowserOfAllMusicRecords
+  function renderNoRecordsFoundMessage() {
+    let messageFieldEl = document.querySelector('.header__message');
+    messageFieldEl.classList.add('warning');
+    messageFieldEl.innerHTML = 'No results were found for the <span class="genre">"'+inputField.value+'"</span> genre.';
   }
   // Function to take api request query, create and send an AJAx call and return the response.
   function requestLastFmAPIResponse(APIQueryString) {
@@ -101,35 +103,71 @@ if ('indexedDB' in window) {
     }).done(function(response) {
       console.log('This is the response:');
       console.log(response);
-      let albumList = response.albums.album;
-      // if (APIQueryString.indexOf('tag.gettopalbums') >= 0) {
-      //   albumList = response.albums.album;
-      // } else {
-      //   albumList = response.tracks.track;
-      // }
-      // let albumList = response.albums.album,
-        let albumsArray = [],
-          now = new Date();
-          document.cookie = 'lastUpdateDate=' + now.getTime();
-          renderLastUpdateDate();
-          console.log(response);
-      // For all albums received, create an object that holds some basic attributes of each album
-      for (let i = 0; i < albumList.length; i++) {
-        let albumObject = {};
-        albumObject.name = albumList[i].name;
-        albumObject.artist = albumList[i].artist.name;
-        albumObject.url = albumList[i].url;
-        albumObject.album_art = albumList[i].image[2]['#text'];
-        albumObject.rank = albumList[i]['@attr'].rank;
-        // Add this simplified album info object to the albumsArray
-        albumsArray.push(albumObject);
-      }
-      // console.log(response);
-      // console.log(albumsArray);
+      let musicList,
+          musicArray = [];
 
-      createAndUpdateLocalMusicDBStore(albumsArray);
+      if (APIQueryString.indexOf('tag.gettopalbums') >= 0) {
+        musicList = response.albums.album;
+        if (musicList.length === 0) {
+          console.log('No Records Found');
+          // Fire clear music records on browser function
+          clearBrowserOfAllMusicRecords();
+          renderNoRecordsFoundMessage();
+          return;
+        }
+        // For all albums received, create an object that holds some basic attributes of each album
+        for (let i = 0; i < musicList.length; i++) {
+          let albumObject = {};
+          albumObject.name = musicList[i].name;
+          albumObject.artist = musicList[i].artist.name;
+          albumObject.url = musicList[i].url;
+          albumObject.album_art = musicList[i].image[2]['#text'];
+          albumObject.rank = musicList[i]['@attr'].rank;
+          albumObject.type = 'album';
+          // Add this simplified album info object to the musicArray
+          musicArray.push(albumObject);
+        }
+
+        let now = new Date();
+        document.cookie = 'lastUpdateDate=' + now.getTime();
+        renderLastUpdateDate();
+      } else {
+        musicList = response.tracks.track;
+        if (musicList.length === 0) {
+          console.log('No Records Found');
+          // Fire clear music records on browser function
+          clearBrowserOfAllMusicRecords();
+          renderNoRecordsFoundMessage();
+          return;
+        }
+        // For all albums received, create an object that holds some basic attributes of each album
+        for (let i = 0; i < musicList.length; i++) {
+          let albumObject = {};
+          albumObject.name = musicList[i].name;
+          albumObject.artist = musicList[i].artist.name;
+          albumObject.url = musicList[i].url;
+          albumObject.album_art = musicList[i].image[2]['#text'];
+          albumObject.rank = musicList[i]['@attr'].rank;
+          albumObject.type = 'track';
+          // Add this simplified album info object to the musicArray
+          musicArray.push(albumObject);
+        }
+
+        let now = new Date();
+        document.cookie = 'lastUpdateDate=' + now.getTime();
+        renderLastUpdateDate();
+      }
+      // let musicList = response.albums.album,
+
+
+      console.log(response);
+
+      // console.log(response);
+      // console.log(musicArray);
+
+      createAndUpdateLocalMusicDBStore(musicArray);
       // Return the completed array of simplified album info objs received from the api response
-      // return albumsArray;
+      // return musicArray;
     }).fail(function() {
       // Handle a failure to get api response here
     });
@@ -179,6 +217,7 @@ if ('indexedDB' in window) {
 
       getAllAlbumsStored.onsuccess = function(event) {
         let allStoredAlbumsInDB = event.target.result;
+        console.log('Here are the results for DB pull:');
         console.log(allStoredAlbumsInDB);
         // Call function that will render or update the new records to browser
         renderOrUpdateAlbumsToBrowser(allStoredAlbumsInDB);
@@ -187,31 +226,8 @@ if ('indexedDB' in window) {
   }
   // Function that renders or updates stored music records in DB into browser
   function renderOrUpdateAlbumsToBrowser(albumsInDB) {
-    if (document.querySelector('.albums')) {
-      updateFields(albumsInDB);
-    } else {
-      createFields(albumsInDB);
-    }
-
-    function updateFields(albumData) {
-      console.log('Fields need to be updated here.');
-      console.log(albumData.length);
-      console.log(albumData);
-      let albumDivsArr = document.querySelectorAll('.albums__album'),
-          albumArtistUrlArr = document.querySelectorAll('.albums__album-artist-url'),
-          albumRankBadgeArr = document.querySelectorAll('.albums__album-rank-badge'),
-          albumImgArr = document.querySelectorAll('.albums__album-art'),
-          albumNameArr = document.querySelectorAll('.albums__album-name'),
-          albumArtist = document.querySelectorAll('.albums__album-artist');
-
-      console.log(albumDivsArr);
-      for (let i = 0; i < albumData.length; i++) {
-        albumArtistUrlArr[i].href = albumData[i].url;
-        albumImgArr[i].src = albumData[i].album_art;
-        albumNameArr[i].innerHTML = albumData[i].name;
-        albumArtist[i].innerHTML = albumData[i].artist;
-      }
-    }
+    clearBrowserOfAllMusicRecords();
+    createFields(albumsInDB);
 
     function createFields(albumData) {
       let albumsContainerDiv = document.createElement('div');
@@ -232,7 +248,7 @@ if ('indexedDB' in window) {
             albumImg.setAttribute('alt', albumData[i].name + ' Album Art');
         let albumNameLabel = document.createElement('h4');
             albumNameLabel.classList = 'albums__label';
-            albumNameLabel.innerHTML = 'album name';
+            albumNameLabel.innerHTML = albumData[i].type + ' Name';
         let albumName = document.createElement('p');
             albumName.classList = 'albums__album-name';
             albumName.innerHTML = albumData[i].name;
@@ -256,7 +272,13 @@ if ('indexedDB' in window) {
       document.querySelector('#app').appendChild(albumsContainerDiv);
     }
   }
-
+  // Function that clears all old music records from browser
+  function clearBrowserOfAllMusicRecords() {
+    let musicRecordConDiv = document.querySelector('.albums');
+    if (musicRecordConDiv) {
+      document.querySelector('#app').removeChild(musicRecordConDiv);
+    }
+  }
 } else {
   alert('This app requires a modern web browser that has the IDBObjectStore feature to use.');
 }
